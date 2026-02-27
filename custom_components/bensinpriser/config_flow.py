@@ -22,7 +22,9 @@ def get_stations(lan):
         response.raise_for_status()
         data = response.json()
         _LOGGER.debug(f"Data fetched for lan {lan}: {data}")
-        stations = list(data.keys())
+        stations = []
+        for name, price in data.items():
+            stations.append(f"{price} - {name}")
         _LOGGER.debug(f"Stations for lan {lan}: {stations}")
         return stations
     except Exception as e:
@@ -46,13 +48,18 @@ class BensinpriserConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_station(self, user_input=None):
         errors = {}
-        if user_input is not None:
-            return self.async_create_entry(title=f"Bensinpriser {self.lan} {user_input['station']}", data={"lan": self.lan, "station": user_input["station"]})
-
         stations = await self.hass.async_add_executor_job(get_stations, self.lan)
         if not stations:
             errors["base"] = "no_stations"
             return self.async_show_form(step_id="station", data_schema=vol.Schema({vol.Required("station"): vol.In([])}), errors=errors)
+
+        # Skapa en mapping så vi kan plocka ut station+bränsle från val i dropdown
+        station_map = {s: s.split(' - ', 1)[-1] if ' - ' in s else s for s in stations}
+
+        if user_input is not None:
+            selected = user_input["station"]
+            station_id = station_map.get(selected, selected)
+            return self.async_create_entry(title=f"Bensinpriser {self.lan} {station_id}", data={"lan": self.lan, "station": station_id})
 
         data_schema = vol.Schema({
             vol.Required("station"): vol.In(stations)
