@@ -41,7 +41,7 @@ Lägg till sensorer via integrations/dashboard i Home Assistant.
 
 ## Författare
 
-Victor Lindholm
+Victor Lindholm (okq8 del)
 
 ## Referenser
 
