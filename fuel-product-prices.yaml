@@ -1,0 +1,240 @@
+openapi: 3.0.1
+info:
+  title: Station Fuel Product Prices
+  description: 'This API provides paginated access to current fuel product prices for OKQ8 stations. Current implementation exposes GET /prices with pagination parameters (page, pageSize) and returns station and product price details. All prices include VAT. Requires a valid subscription key via header ''Ocp-Apim-Subscription-Key'' (more details available at - https://developer.test.api.okq8.se/api-authentication), and a required ''DefaultHeader'' containing transaction metadata (transactionId, systemName, ipAddress, hostName, userToken, serviceToken).'
+  version: v1
+servers:
+  - url: https://test.api.okq8.se/stationFuelProductPrices/v1
+  - url: https://private.test.api.okq8.se/stationFuelProductPrices/v1
+paths:
+  /prices:
+    get:
+      tags:
+        - Station Prices
+      summary: Retrieve current fuel and product prices across all OKQ8 stations
+      description: 'Retrieve current fuel and product prices across all OKQ8 stations. This API provides real-time pricing data essential for price comparison, inventory management, and customer-facing applications. Supports pagination for efficient data retrieval.'
+      operationId: get-prices
+      parameters:
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 10
+        - name: DefaultHeader
+          in: header
+          description: 'Header with required data {"transactionId":"eacab7fb-74d6-ec11-a7b5-000d3a4a5fec","systemName":"1012","ipAddress":"100.45.67.01","hostName":"HOSTPC","userToken":"Unique data","serviceToken":"unique data"}'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: '"Success"'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StationsPricesResp'
+              example:
+                pageNumber: 0
+                pageSize: 0
+                totalRecords: 0
+                totalPages: 0
+                stationsPrices:
+                  - stationId: ST001
+                    address: 'Eksempelvej 10, 8000 Aarhus C'
+                    products:
+                      - productId: '95'
+                        productName: Benzin 95
+                        price: 13.79
+                        unit: L
+                        priceChangeDate: '2025-11-17T08:30:00.0000000+00:00'
+        '400':
+          description: '"BadRequest"'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomError'
+              example:
+                statusCode: 0
+                errorMessages:
+                  - message: string
+                timeStamp: string
+                transactionId: string
+        '401':
+          description: '"Unauthorized"'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomError'
+              example:
+                statusCode: 0
+                errorMessages:
+                  - message: string
+                timeStamp: string
+                transactionId: string
+        '403':
+          description: '"Forbidden"'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomError'
+              example:
+                statusCode: 0
+                errorMessages:
+                  - message: string
+                timeStamp: string
+                transactionId: string
+        '404':
+          description: '"Not found "'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomError'
+              example:
+                statusCode: 0
+                errorMessages:
+                  - message: string
+                timeStamp: string
+                transactionId: string
+        '500':
+          description: '"Internal server error "'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomError'
+              example:
+                statusCode: 0
+                errorMessages:
+                  - message: string
+                timeStamp: string
+                transactionId: string
+components:
+  schemas:
+    StationsPricesResp:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+          description: Current page number (1-based).
+          format: int32
+        pageSize:
+          type: integer
+          description: Number of records returned per page.
+          format: int32
+        totalRecords:
+          type: integer
+          description: Total number of station price records across all pages.
+          format: int32
+        totalPages:
+          type: integer
+          description: Total number of pages available for the current query.
+          format: int32
+        stationsPrices:
+          type: array
+          items:
+            $ref: '#/components/schemas/StationsPrices'
+          description: List of station price objects for the current page; may be null when there are no results.
+          nullable: true
+      additionalProperties: false
+      description: Paginated response containing current prices for OKQ8 stations.
+    StationsPrices:
+      type: object
+      properties:
+        stationId:
+          type: string
+          description: Unique identifier for the station.
+          nullable: true
+          example: ST001
+        address:
+          type: string
+          description: Formatted postal address of the station.
+          nullable: true
+          example: 'Eksempelvej 10, 8000 Aarhus C'
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceDetail'
+          description: Array of product price details available at the station; may be null when none are available.
+          nullable: true
+      additionalProperties: false
+    PriceDetail:
+      type: object
+      properties:
+        productId:
+          type: string
+          description: 'Identifier or code for the product (e.g., fuel type code).'
+          nullable: true
+          example: '95'
+        productName:
+          type: string
+          description: Human-readable name of the product.
+          nullable: true
+          example: Benzin 95
+        price:
+          type: number
+          description: Current product price including VAT.
+          format: double
+          nullable: true
+          example: 13.79
+        unit:
+          type: string
+          description: Unit of measure for the price (for example 'L' for liters).
+          nullable: true
+          example: L
+        priceChangeDate:
+          type: string
+          description: Timestamp (ISO 8601) when the price was last changed.
+          format: date-time
+          nullable: true
+          example: '2025-11-17T08:30:00.0000000+00:00'
+      additionalProperties: false
+    CustomError:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          description: HTTP-style error code indicating the type of error.
+          format: int32
+        errorMessages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorMessages'
+          description: Array of one or more human-readable error message objects.
+          nullable: true
+        timeStamp:
+          type: string
+          description: Timestamp (ISO 8601) when the error was generated.
+          format: date-time
+        transactionId:
+          type: string
+          description: Correlation ID for the request/transaction useful for tracing.
+          format: uuid
+      additionalProperties: false
+    ErrorMessages:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Human-readable error message describing the problem.
+          nullable: true
+      additionalProperties: false
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      name: Ocp-Apim-Subscription-Key
+      in: header
+    apiKeyQuery:
+      type: apiKey
+      name: subscription-key
+      in: query
+security:
+  - apiKeyHeader: [ ]
+  - apiKeyQuery: [ ]
